@@ -12,6 +12,7 @@ function Integration(integrationConfiguration) {
 	this.callbacks = {};
 
 	this.selfConfig = integrationConfiguration;
+	this.appConfig = config;
 	this.log = new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel'));
 	this.log.info(`Loading integration: ${this.selfConfig.name}`);
 
@@ -51,11 +52,11 @@ Integration.prototype.setCallback = function(event, callback) {
 };
 
 Integration.prototype.raiseEvent = function(event, topic, data) {
-	this.log.debug(`Raising event "${event}" with topic "${topic}"`);
 	if (this.callbacks[event]) {
+		this.log.debug(`Raising event "${event}" with topic "${topic}"`);
 		this.callbacks[event](topic, data);
 	} else {
-		this.log.warn('No callback found!');
+		this.log.warn(`No callback found for event: ${event}`);
 	}
 };
 
@@ -97,7 +98,7 @@ Integration.prototype.handleMessage = function(event, data) {
 		throw new Error(`handleMessage: event cannot be empty`);
 	if (!data) {
 		this.log.warn(`handleMessage: data was empty, event=${event}`);
-		data = {};
+		data = { topicName: 'unknown' };
 	}
 	if (!data.topicName) {
 		this.log.warn(`handleMessage: data.topicName was empty, event=${event}`);

@@ -3,7 +3,7 @@ const deref = require('json-schema-deref-sync');
 
 const Logger = require('./loggerService');
 
-var log = new loggerService('config');
+var log = new Logger('config');
 
 
 
