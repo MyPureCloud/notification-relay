@@ -3,16 +3,20 @@ const Winston = require('winston');
 
 
 
-function Logger(topic) {
+function Logger(topic, level) {
 	var self = this;
 
 	if (topic)
 		this.topic = topic;
 
+	level = level ? level :'silly';
+
+	console.log(`Initializing logger for ${topic} at level ${level}`);
+
 	this.log = new Winston.Logger({
 	    transports: [
 	        new Winston.transports.Console({
-	            level: 'silly',
+	            level: level,
 	            handleExceptions: true,
 	            json: false,
 	            colorize: true

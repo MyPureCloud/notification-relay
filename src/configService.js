@@ -1,6 +1,9 @@
+const _ = require('lodash');
 const deref = require('json-schema-deref-sync');
 
-const log = new (require('./loggerService'))('config');
+const Logger = require('./loggerService');
+
+var log = new loggerService('config');
 
 
 
@@ -13,6 +16,29 @@ function Config() {
 		this.args.config = './config.json';
 	log.verbose(`loading config from ${this.args.config}`);
 	this.data = deref(require(this.args.config));
+	this.data.get = function get(path) {
+		try {
+			var data = this.data;
+			var parts = path.split('.');
+
+			_.forEach(parts, function(part) {
+				if (data[part]) {
+					data = data[part];
+				}	else {
+					log.warn(`Failed to find "${path}" at "${part}"`);
+					return undefined;
+				}
+			});
+
+			return data;
+		} catch (err) {
+			log.error(err);
+			return undefined;
+		}
+	}.bind(this);
+
+	// Re-initialize logger
+	log = new Logger('config', this.data.get('settings.logLevel'));
 
 	// Override client ID and secret with command line values
 	if (!this.data.pureCloud)

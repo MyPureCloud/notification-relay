@@ -12,7 +12,7 @@ var sockets = [];
 
 
 function SocketManager() {
-	this.log = new Logger('SocketManager');
+	this.log = new Logger('SocketManager', config.data.get('settings.logLevel'));
 }
 
 

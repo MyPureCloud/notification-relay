@@ -12,7 +12,7 @@ function Integration(integrationConfiguration) {
 	this.callbacks = {};
 
 	this.selfConfig = integrationConfiguration;
-	this.log = new Logger(this.selfConfig.logTopic);
+	this.log = new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel'));
 	this.log.info(`Loading integration: ${this.selfConfig.name}`);
 
 	if (this.selfConfig.modulePath) {
