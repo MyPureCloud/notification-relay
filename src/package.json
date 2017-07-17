@@ -1,0 +1,39 @@
+{
+  "name": "notification-relay",
+  "version": "1.0.0",
+  "description": "An open source project for real time adherence (RTA) and data streaming integrations",
+  "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MyPureCloud/notification-relay.git"
+  },
+  "keywords": [
+    "purecloud",
+    "open",
+    "data",
+    "stream",
+    "real",
+    "time",
+    "adherence",
+    "rta",
+    "wfm"
+  ],
+  "author": "Genesys Developer Evangelists",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MyPureCloud/notification-relay/issues"
+  },
+  "homepage": "https://github.com/MyPureCloud/notification-relay#readme",
+  "dependencies": {
+    "fs-extra": "^3.0.1",
+    "json-schema-deref-sync": "^0.3.3",
+    "lodash": "^4.17.4",
+    "mkdirp": "^0.5.1",
+    "moment": "^2.18.1",
+    "moment-timezone": "^0.5.13",
+    "purecloud-platform-client-v2": "^2.0.8",
+    "q": "^1.5.0",
+    "winston": "^2.3.1",
+    "ws": "^3.0.0"
+  }
+}

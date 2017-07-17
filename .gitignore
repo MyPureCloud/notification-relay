@@ -1,3 +1,15 @@
+### Project-specific ###
+
+local/
+
+# temporary while in dev
+src/config/
+src/config.json
+
+
+
+### node gitignore ###
+
 # Logs
 logs
 *.log
@@ -56,4 +68,3 @@ typings/
 
 # dotenv environment variables file
 .env
-
