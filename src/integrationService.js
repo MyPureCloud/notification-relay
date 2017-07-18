@@ -72,9 +72,7 @@ Integration.prototype.subscribeNotifications = function(subscriptions, replaceEx
 			// Build topics array
 			if (Array.isArray(subscriptions)) {
 				// Assume array of topics
-				_.forEach(subscriptions, function(value) {
-					topics.push(value);
-				});
+				topics = subscriptions;
 			} else {
 				// Assume config object
 				_.forOwn(subscriptions, function(value, key) {
