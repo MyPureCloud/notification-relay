@@ -13,12 +13,12 @@ function Integration(integrationConfiguration) {
 
 	this.selfConfig = integrationConfiguration;
 	this.appConfig = config;
-	this.log = new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel'));
+	this.log = new Logger(this.selfConfig.logTopic + '-service', config.data.get('settings.logLevel'));
 	this.log.info(`Loading integration: ${this.selfConfig.name}`);
 
 	if (this.selfConfig.modulePath) {
 		this.log.info(`Loading module from ${this.selfConfig.modulePath}`);
-		this.module = new (require(this.selfConfig.modulePath))(Logger, this);
+		this.module = new (require(this.selfConfig.modulePath))(new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel')), this);
 	}
 
 	this.handleMessage(this.eventStrings.INITIALIZED, { topicName: this.eventStrings.INITIALIZED });
