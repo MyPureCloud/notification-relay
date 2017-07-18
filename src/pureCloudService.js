@@ -3,11 +3,14 @@ const platformClient = require('purecloud-platform-client-v2');
 const Q = require('q');
 
 const config = require('./configService');
+const log = new (require('./loggerService'))('pureCloud', config.data.get('settings.logLevel'));
 
 
 
 var client = platformClient.ApiClient.instance;
-//client.setDebugLog(console.log, 25);
+if (config.data.settings.enableSdkDebugging === true) {
+	client.setDebugLog(log.error.bind(log), 25);
+}
 var authorizationApi = new platformClient.AuthorizationApi();
 var notificationsApi = new platformClient.NotificationsApi();
 
