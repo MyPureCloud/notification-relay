@@ -56,7 +56,7 @@ Integration.prototype.raiseEvent = function(event, topic, data) {
 		this.log.debug(`Raising event "${event}" with topic "${topic}"`);
 		this.callbacks[event](topic, data);
 	} else {
-		this.log.warn(`No callback found for event: ${event}`);
+		this.log.info(`No callback found for event: ${event}`);
 	}
 };
 
@@ -101,32 +101,32 @@ Integration.prototype.handleMessage = function(event, data) {
 	// Validate data
 	if (!event)
 		throw new Error(`handleMessage: event cannot be empty`);
-	if (!data) {
-		this.log.warn(`handleMessage: data was empty, event=${event}`);
-		data = { topicName: 'unknown' };
-	}
-	if (!data.topicName) {
-		this.log.warn(`handleMessage: data.topicName was empty, event=${event}`);
-		data.topicName = 'unknown';
-	}
 
 	// Handle event
 	switch(event.toLowerCase()) {
 		case this.eventStrings.INITIALIZED.toLowerCase(): {
-			this.raiseEvent(this.eventStrings.INITIALIZED, data.topicName, data);
+			this.raiseEvent(this.eventStrings.INITIALIZED, this.eventStrings.INITIALIZED, data);
 			break;
 		}
-		case 'open':
+		case 'open': // websocket open
 		case this.eventStrings.SOCKETOPEN.toLowerCase(): {
-			this.raiseEvent(this.eventStrings.SOCKETOPEN, data.topicName, data);
+			this.raiseEvent(this.eventStrings.SOCKETOPEN, this.eventStrings.SOCKETOPEN, data);
 			break;
 		}
 		case this.eventStrings.ERROR.toLowerCase(): {
-			this.raiseEvent(this.eventStrings.ERROR, data.topicName, data);
+			this.raiseEvent(this.eventStrings.ERROR, this.eventStrings.ERROR, data);
 			break;
 		}
-		case 'message':
+		case 'message': // websocket message
 		case this.eventStrings.NOTIFICATION.toLowerCase(): {
+			if (!data) {
+				this.log.warn(`handleMessage: data was empty, event=${event}`);
+				data = { topicName: 'unknown' };
+			}
+			if (!data.topicName) {
+				this.log.warn(`handleMessage: data.topicName was empty, event=${event}`);
+				data.topicName = 'unknown';
+			}
 			this.raiseEvent(this.eventStrings.NOTIFICATION, data.topicName, data);
 			break;
 		}
