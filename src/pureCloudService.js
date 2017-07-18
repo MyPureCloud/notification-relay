@@ -9,7 +9,7 @@ const log = new (require('./loggerService'))('pureCloud', config.data.get('setti
 
 var client = platformClient.ApiClient.instance;
 if (config.data.settings.enableSdkDebugging === true) {
-	client.setDebugLog(log.error.bind(log), 25);
+	client.setDebugLog(log.debug.bind(log), 25);
 }
 var authorizationApi = new platformClient.AuthorizationApi();
 var notificationsApi = new platformClient.NotificationsApi();
