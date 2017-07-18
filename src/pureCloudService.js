@@ -3,13 +3,17 @@ const platformClient = require('purecloud-platform-client-v2');
 const Q = require('q');
 
 const config = require('./configService');
-const log = new (require('./loggerService'))('pureCloud', config.data.get('settings.logLevel'));
+const Logger = require('./loggerService');
+
+const logLevel = config.data.get('settings.logLevel');
+const log = new Logger('purecloud', logLevel);
 
 
 
 var client = platformClient.ApiClient.instance;
 if (config.data.settings.enableSdkDebugging === true) {
-	client.setDebugLog(log.debug.bind(log), 25);
+	var sdkDebugLog = new Logger('purecloud-sdk', logLevel);
+	client.setDebugLog(sdkDebugLog.debug.bind(sdkDebugLog), 25);
 }
 var authorizationApi = new platformClient.AuthorizationApi();
 var notificationsApi = new platformClient.NotificationsApi();
@@ -23,10 +27,10 @@ function PureCloud() {
 		})
 		.catch(function(response) {
 			if (response.status) {
-				console.log(`${response.status} - ${response.error.message}`);
-				console.log(response.error);
+				log.error(`${response.status} - ${response.error.message}`);
+				log.error(response.error);
 			} else {
-				console.log(response);
+				log.error(response);
 			}
 		});
 }
@@ -40,15 +44,15 @@ PureCloud.prototype.login = function() {
 			return authorizationApi.getAuthorizationPermissions();
 		})
 		.then(function(data) {
-    	console.log(`getAuthorizationPermissions success! permissions count: ${data.total}`);
+    	log.silly(`getAuthorizationPermissions success! permissions count: ${data.total}`);
 			deferred.resolve();
 		})
 		.catch(function(response) {
 			if (response.status) {
-				console.log(`${response.status} - ${response.error.message}`);
-				console.log(response.error);
+				log.error(`${response.status} - ${response.error.message}`);
+				log.error(response.error);
 			} else {
-				console.log(response);
+				log.error(response);
 			}
 			deferred.reject(response);
 		});
@@ -62,15 +66,15 @@ PureCloud.prototype.createChannel = function() {
 
 	notificationsApi.postNotificationsChannels()
 		.then(function(data) {
-    	console.log(`Created channel ID: ${data.id}`);
+    	log.debug(`Created channel ID: ${data.id}`);
 			deferred.resolve(data);
 		})
 		.catch(function(response) {
 			if (response.status) {
-				console.log(`${response.status} - ${response.error.message}`);
-				console.log(response.error);
+				log.error(`${response.status} - ${response.error.message}`);
+				log.error(response.error);
 			} else {
-				console.log(response);
+				log.error(response);
 			}
 			deferred.reject(response);
 		});
@@ -114,7 +118,6 @@ PureCloud.prototype.subscribeTopics = function(topics, channelId, replace) {
 	_.forEach(topics, function(topic) {
 		body.push({ 'id': topic });
 	});
-	console.log(JSON.stringify(body,null,2));
 	body = JSON.stringify(body);
 
 	// Make request
@@ -131,10 +134,10 @@ PureCloud.prototype.subscribeTopics = function(topics, channelId, replace) {
 		})
 		.catch(function(response) {
 			if (response.status) {
-				console.log(`${response.status} - ${response.error.message}`);
-				console.log(response.error);
+				log.error(`${response.status} - ${response.error.message}`);
+				log.error(response.error);
 			} else {
-				console.log(response);
+				log.error(response);
 			}
 			deferred.reject(response);
 		});
