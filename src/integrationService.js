@@ -70,16 +70,23 @@ Integration.prototype.subscribeNotifications = function(subscriptions, replaceEx
 			var topics = [];
 			
 			// Build topics array
-			_.forOwn(subscriptions, function(value, key) {
-				_.forEach(value, function(id) {
-					var topic = key.replace(/{.*}/ig, id);
-					topics.push(topic);
+			if (Array.isArray(subscriptions)) {
+				// Assume array of topics
+				_.forEach(subscriptions, function(value) {
+					topics.push(value);
 				});
-			});
+			} else {
+				// Assume config object
+				_.forOwn(subscriptions, function(value, key) {
+					_.forEach(value, function(id) {
+						var topic = key.replace(/{.*}/ig, id);
+						topics.push(topic);
+					});
+				});
+			}
 
 			// Subscribe to the topics
-			_this.log.debug(`Subscribing to topics: ${topics}`);
-			_this.log.debug(_this.channel);
+			_this.log.debug(`Using channel ${_this.channel.id} to subscribe to topics: ${topics}`);
 			pureCloud.subscribeTopics(topics, _this.channel.id)
 				.then(function(){
 					deferred.resolve();
