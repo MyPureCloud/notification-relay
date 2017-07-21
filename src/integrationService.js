@@ -5,6 +5,7 @@ const Logger = require('./loggerService');
 const config = require('./configService');
 const pureCloud = require('./pureCloudService');
 const socketManager = require('./socketManagerService');
+const TemplateService = require('./templateService');
 
 
 
@@ -18,10 +19,13 @@ function Integration(integrationConfiguration) {
 
 	if (this.selfConfig.modulePath) {
 		this.log.info(`Loading module from ${this.selfConfig.modulePath}`);
-		this.module = new (require(this.selfConfig.modulePath))(new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel')), this);
+		this.module = new (require(this.selfConfig.modulePath))(
+			this,
+			new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel')),
+			new TemplateService());
 	}
 
-	this.handleMessage(this.eventStrings.INITIALIZED, { topicName: this.eventStrings.INITIALIZED });
+	this.handleMessage(this.eventStrings.INITIALIZED);
 }
 
 

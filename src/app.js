@@ -11,6 +11,10 @@ const Integration = require('./integrationService');
 const pureCloud = require('./pureCloudService');
 
 
+
+var integrations = [];
+
+
 log.writeBox(`Notification Relay\n${(new moment()).format('h:m:s a')}`);
 
 log.debug('Debug message');
@@ -18,9 +22,9 @@ log.debug('Debug message');
 
 pureCloud.login()
 	.then(function() {
-		console.log('logged in!');
+		// Load integrations
 		_.forEach(config.data.integrations, function(integration) {
-			var i = new Integration(integration);
+			integrations.push(new Integration(integration));
 		});
 	})
 	.catch(function(err) {
