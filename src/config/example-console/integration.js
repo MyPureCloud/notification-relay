@@ -57,6 +57,25 @@ function getUser(id) {
 	return user;
 }
 
+function getPresence(id) {
+	if (!id) return;
+	if (id.length != 36) {
+		_this.log.warn(`getPresence: ID ${id} is not a GUID!`);
+		return;
+	}
+
+	var presence = _this.defaultCache.get('presences')[id];
+	if (!presence) {
+		_this.log.warn(`getPresence: No presence in cache for ID ${id}`);
+		return;
+	}
+
+	// Set label
+	presence.label = presence.languageLabels['en_US'];
+
+	return presence;
+}
+
 
 
 function onInitialized(topic, data) {
@@ -80,10 +99,11 @@ function onNotification(topic, data) {
 		if (presenceMatch) {
 			// Add extra data to event
 			data.eventBody.user = getUser(presenceMatch[1]);
+			data.eventBody.presence = getPresence(data.eventBody.presenceDefinition.id);
 
 			// Execute template
 			var presenceMessage = _this.templateService.executeTemplate(
-				"{{# def.now() }} - User {{= it.user.name }} ({{= it.user.id }}) is now {{= it.presenceDefinition.id }}", 
+				"{{# def.now() }} - User {{= it.user.name }} ({{= it.user.id }}) is now {{= it.presence.label }} ({{= it.presence.systemPresence }}) ({{= it.presenceDefinition.id }})", 
 				data.eventBody, 
 				defs);
 

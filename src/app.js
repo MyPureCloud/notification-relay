@@ -39,6 +39,13 @@ pureCloud.login()
 		log.info(`Loaded ${_.keys(cache.get('queues')).length} queues into default cache`);
 	})
 	.then(function() {
+		return pureCloud.getPresences();
+	})
+	.then(function(presences) {
+		cache.set('presences', presences);
+		log.info(`Loaded ${_.keys(cache.get('presences')).length} presences into default cache`);
+	})
+	.then(function() {
 		// Load integrations
 		_.forEach(config.data.integrations, function(integration) {
 			integrations.push(new Integration(integration));
