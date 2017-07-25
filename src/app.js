@@ -23,11 +23,20 @@ log.debug('Debug message');
 
 pureCloud.login()
 	.then(function() {
+		log.info('Populating default cache...');
 		// TODO: Populate cache with entities defined in config (users, queues, etc)
 		return pureCloud.getUsers();
 	})
 	.then(function(users) {
 		cache.set('users', users);
+		log.info(`Loaded ${_.keys(cache.get('users')).length} users into default cache`);
+	})
+	.then(function() {
+		return pureCloud.getQueues();
+	})
+	.then(function(queues) {
+		cache.set('queues', queues);
+		log.info(`Loaded ${_.keys(cache.get('queues')).length} queues into default cache`);
 	})
 	.then(function() {
 		// Load integrations

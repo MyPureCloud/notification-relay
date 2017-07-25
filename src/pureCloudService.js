@@ -17,6 +17,7 @@ if (config.data.settings.enableSdkDebugging === true) {
 }
 var authorizationApi = new platformClient.AuthorizationApi();
 var notificationsApi = new platformClient.NotificationsApi();
+var routingApi = new platformClient.RoutingApi();
 var usersApi = new platformClient.UsersApi();
 
 
@@ -175,7 +176,45 @@ function getUsersImpl(users = {}, deferred = Q.defer(), pageNumber = 1) {
 	  	}
 
 	  	// Recurse function
-	  	_this.getUsers(pageNumber + 1);
+	  	getUsersImpl(users, deferred, pageNumber + 1);
+	  })
+		.catch(function(response) {
+			if (response.status) {
+				log.error(`${response.status} - ${response.error.message}`);
+				log.error(response.error);
+			} else {
+				log.error(response);
+			}
+			deferred.reject(response);
+		});
+
+	return deferred.promise;
+}
+
+PureCloud.prototype.getQueues = function() {
+	// Returns a promise
+	return getQueuesImpl();
+};
+
+function getQueuesImpl(queues = {}, deferred = Q.defer(), pageNumber = 1) {
+	var _this = this;
+
+	routingApi.getRoutingQueues({ 'pageSize': 100, 'pageNumber': pageNumber, active: true })
+	  .then(function(data) {
+	  	// Add queues to cache
+	  	_.forEach(data.entities, function(queue) {
+	  		queues[queue.id] = queue;
+	  	});
+
+	  	// Done processing?
+	  	if (pageNumber >= data.pageCount) {
+	  		log.debug(`getQueues: Got ${_.keys(queues).length} queues`);
+	  		deferred.resolve(queues);
+	  		return;
+	  	}
+
+	  	// Recurse function
+	  	getQueuesImpl(queues, deferred, pageNumber + 1);
 	  })
 		.catch(function(response) {
 			if (response.status) {
