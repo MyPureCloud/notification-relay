@@ -17,6 +17,7 @@ if (config.data.settings.enableSdkDebugging === true) {
 }
 var authorizationApi = new platformClient.AuthorizationApi();
 var notificationsApi = new platformClient.NotificationsApi();
+var usersApi = new platformClient.UsersApi();
 
 
 
@@ -145,6 +146,49 @@ PureCloud.prototype.subscribeTopics = function(topics, channelId, replace) {
 	return deferred.promise;
 };
 
+
+
+/*
+ * Helpers
+ */
+
+PureCloud.prototype.getUsers = function() {
+	// Returns a promise
+	return getUsersImpl();
+};
+
+function getUsersImpl(users = {}, deferred = Q.defer(), pageNumber = 1) {
+	var _this = this;
+
+	usersApi.getUsers({ 'pageSize': 100, 'pageNumber': pageNumber })
+	  .then(function(data) {
+	  	// Add users to cache
+	  	_.forEach(data.entities, function(user) {
+	  		users[user.id] = user;
+	  	});
+
+	  	// Done processing?
+	  	if (pageNumber >= data.pageCount) {
+	  		log.debug(`getUsers: Got ${_.keys(users).length} users`);
+	  		deferred.resolve(users);
+	  		return;
+	  	}
+
+	  	// Recurse function
+	  	_this.getUsers(pageNumber + 1);
+	  })
+		.catch(function(response) {
+			if (response.status) {
+				log.error(`${response.status} - ${response.error.message}`);
+				log.error(response.error);
+			} else {
+				log.error(response);
+			}
+			deferred.reject(response);
+		});
+
+	return deferred.promise;
+}
 
 
 

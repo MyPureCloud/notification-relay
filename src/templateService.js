@@ -1,6 +1,4 @@
-const _ = require('lodash');
 const dot = require('dot');
-const Q = require('q');
 
 
 
@@ -23,7 +21,7 @@ TemplateService.prototype.executeTemplate = function(templateString, data, defs)
 		log.silly('Executing template...');
 		return template(data);
 	} catch(err) {
-		log.error(`Error compiling/executing template! Template: ${templateString}`);
+		log.error(`Error compiling/executing template: ${templateString}`);
 		log.error(err);
 	}
 };

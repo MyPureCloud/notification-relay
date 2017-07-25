@@ -9,18 +9,26 @@ const config = require('./configService');
 const log = new (require('./loggerService'))('main', config.data.get('settings.logLevel'));
 const Integration = require('./integrationService');
 const pureCloud = require('./pureCloudService');
+const cache = require('./cacheService');
 
 
 
 var integrations = [];
 
 
-log.writeBox(`Notification Relay\n${(new moment()).format('h:m:s a')}`);
+log.writeBox(`Notification Relay\n${(new moment()).format('h:mm:ss a')}`);
 
 log.debug('Debug message');
 
 
 pureCloud.login()
+	.then(function() {
+		// TODO: Populate cache with entities defined in config (users, queues, etc)
+		return pureCloud.getUsers();
+	})
+	.then(function(users) {
+		cache.set('users', users);
+	})
 	.then(function() {
 		// Load integrations
 		_.forEach(config.data.integrations, function(integration) {

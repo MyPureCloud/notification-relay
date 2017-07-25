@@ -3,35 +3,59 @@
  * logs information to the console window. 
  */
 
+// Import node modules
+const _  = require('lodash');
+const platformClient = require('purecloud-platform-client-v2');
 
 // Import the def module used in the templates
 const defs = require('./defs');
 
 const CHANNEL_METADATA_TOPIC = "channel.metadata";
 
+// Set instance variables
 var _this;
+var usersApi = new platformClient.UsersApi();
 
-function Test1(integration, logger, templateService) {
+function Test1(integration, logger, templateService, instanceCache, defaultCache) {
 	// Keep track of services
 	_this = this;
 	this.integration = integration;
 	this.log = logger;
 	this.templateService = templateService;
+	this.cache = instanceCache;
+	this.defaultCache = defaultCache;
 
 	// Set callbacks for events
 	this.integration.setCallback(this.integration.eventStrings.INITIALIZED, onInitialized);
 	this.integration.setCallback(this.integration.eventStrings.NOTIFICATION, onNotification);
 	this.integration.setCallback(this.integration.eventStrings.ERROR, onError);
 
-	// Subscribe to notifications
+	// Subscribe to notifications via config object
 	this.log.debug('subscribing notifications');
-	// Via config object
 	this.integration.subscribeNotifications(this.integration.selfConfig.subscriptions);
+
+	this.log.debug(`There are ${_.keys(_this.defaultCache.get('users')).length} users in the default cache`);
 }
 
 
 
 module.exports = Test1;
+
+
+
+function getUser(id) {
+	if (!id) return;
+	if (id.length != 36) {
+		_this.log.warn(`getUser: ID ${id} is not a GUID!`);
+		return;
+	}
+
+	var user = _this.defaultCache.get('users')[id];
+	if (!user)
+		_this.log.warn(`getUser: No user in cache for ID ${id}`);
+
+	return user;
+}
 
 
 
@@ -54,24 +78,51 @@ function onNotification(topic, data) {
 		// Presence
 		var presenceMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.presence/i);
 		if (presenceMatch) {
-			data.eventBody.userId = presenceMatch[1];
-			_this.log.info(_this.templateService.executeTemplate("{{# def.now() }} - User {{= it.userId }} is now {{= it.presenceDefinition.id }}", data.eventBody, defs));
+			// Add extra data to event
+			data.eventBody.user = getUser(presenceMatch[1]);
+
+			// Execute template
+			var presenceMessage = _this.templateService.executeTemplate(
+				"{{# def.now() }} - User {{= it.user.name }} ({{= it.user.id }}) is now {{= it.presenceDefinition.id }}", 
+				data.eventBody, 
+				defs);
+
+			// Success?
+			if (presenceMessage)
+				_this.log.info(presenceMessage);
+			else
+				_this.log.warn('Template execution failed! No message returned.');
 			return;
 		}
 
 		// RoutingStatus
 		var routingStatusMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.routingStatus/i);
 		if (routingStatusMatch) {
-			data.eventBody.userId = routingStatusMatch[1];
-			_this.log.info(_this.templateService.executeTemplate("{{# def.now() }} - User {{= it.userId }} is now {{= it.routingStatus.status }}", data.eventBody, defs));
+			// Add extra data to event
+			data.eventBody.user = getUser(routingStatusMatch[1]);
+
+			// Execute template
+			var routingMessage = _this.templateService.executeTemplate(
+				"{{# def.now() }} - User {{= it.user.name }} ({{= it.user.id }}) is now {{= it.routingStatus.status }}", 
+				data.eventBody, 
+				defs);
+
+			// Success?
+			if (routingMessage)
+				_this.log.info(routingMessage);
+			else
+				_this.log.warn('Template execution failed! No message returned.');
 			return;
 		}
 
 		// Conversation summary
 		var conversationMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.conversationsummary/i);
 		if (conversationMatch) {
-			data.eventBody.userId = conversationMatch[1];
-			_this.log.info(_this.templateService.executeTemplate("{{# def.now() }} - User {{= it.userId }}: \n" + 
+			// Add extra data to event
+			data.eventBody.user = getUser(conversationMatch[1]);
+
+			// Execute template
+			var conversationMessage = _this.templateService.executeTemplate("{{# def.now() }} - User {{= it.user.name }} ({{= it.user.id }}): \n" + 
 				"calls: CC: {{= it.call.contactCenter.active }}/{{= it.call.contactCenter.acw }}, " +
 				"Enterprise: {{= it.call.enterprise.active }}/{{= it.call.enterprise.acw }}\n" + 
 				"callbacks: CC: {{= it.callback.contactCenter.active }}/{{= it.callback.contactCenter.acw }}, " +
@@ -79,7 +130,13 @@ function onNotification(topic, data) {
 				"emails: CC: {{= it.email.contactCenter.active }}/{{= it.email.contactCenter.acw }}, " +
 				"Enterprise: {{= it.email.enterprise.active }}/{{= it.email.enterprise.acw }}\n" + 
 				"chats: CC: {{= it.chat.contactCenter.active }}/{{= it.chat.contactCenter.acw }}, " +
-				"Enterprise: {{= it.chat.enterprise.active }}/{{= it.chat.enterprise.acw }}", data.eventBody, defs));
+				"Enterprise: {{= it.chat.enterprise.active }}/{{= it.chat.enterprise.acw }}", data.eventBody, defs);
+
+			// Success?
+			if (conversationMessage)
+				_this.log.info(conversationMessage);
+			else
+				_this.log.warn('Template execution failed! No message returned.');
 			return;
 		}
 

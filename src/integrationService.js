@@ -2,6 +2,7 @@ const _ = require('lodash');
 const Q = require('q');
 
 const Logger = require('./loggerService');
+const cache = require('./cacheService');
 const config = require('./configService');
 const pureCloud = require('./pureCloudService');
 const socketManager = require('./socketManagerService');
@@ -22,7 +23,9 @@ function Integration(integrationConfiguration) {
 		this.module = new (require(this.selfConfig.modulePath))(
 			this,
 			new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel')),
-			new TemplateService());
+			new TemplateService(),
+			cache.addInstance(this.selfConfig.name),
+			cache);
 	}
 
 	this.handleMessage(this.eventStrings.INITIALIZED);
