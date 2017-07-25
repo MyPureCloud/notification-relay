@@ -59,7 +59,9 @@ Logger.prototype.profile = function(msg) { this.log.profile(msg); };
 
 Logger.prototype.formatMessage = function(msg, data) {
 	var trace = '';
-	if (msg && typeof(msg) === 'object') {
+	if (msg && msg instanceof Error) {
+		trace += msg.stack;
+	} else if (msg && typeof(msg) === 'object') {
 		trace += JSON.stringify(msg,null,2);
 	}	else {
 		trace += msg;
