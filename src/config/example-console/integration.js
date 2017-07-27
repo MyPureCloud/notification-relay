@@ -16,7 +16,7 @@ const CHANNEL_METADATA_TOPIC = "channel.metadata";
 var _this;
 var usersApi = new platformClient.UsersApi();
 
-function Test1(integration, logger, templateService, instanceCache, defaultCache) {
+function Integration(integration, logger, templateService, instanceCache, defaultCache) {
 	// Keep track of services
 	_this = this;
 	this.integration = integration;
@@ -27,6 +27,7 @@ function Test1(integration, logger, templateService, instanceCache, defaultCache
 
 	// Set callbacks for events
 	this.integration.setCallback(this.integration.eventStrings.INITIALIZED, onInitialized);
+	this.integration.setCallback(this.integration.eventStrings.SOCKETOPEN, onSocketOpen);
 	this.integration.setCallback(this.integration.eventStrings.NOTIFICATION, onNotification);
 	this.integration.setCallback(this.integration.eventStrings.ERROR, onError);
 
@@ -39,10 +40,15 @@ function Test1(integration, logger, templateService, instanceCache, defaultCache
 
 
 
-module.exports = Test1;
+module.exports = Integration;
 
 
 
+/**
+ * Gets a user object by ID from the default cache
+ * @param  {string/guid}	id 	The ID of the user to get
+ * @return {object/user}			The user object
+ */
 function getUser(id) {
 	if (!id) return;
 	if (id.length != 36) {
@@ -57,6 +63,11 @@ function getUser(id) {
 	return user;
 }
 
+/**
+ * Gets a presence object by ID from the default cache
+ * @param  {string/guid}			id 	The ID of the presence to get
+ * @return {object/presence}			The presence object
+ */
 function getPresence(id) {
 	if (!id) return;
 	if (id.length != 36) {
@@ -76,10 +87,14 @@ function getPresence(id) {
 	return presence;
 }
 
-
+// Event callbacks
 
 function onInitialized(topic, data) {
 	_this.log.debug(`onInitialized: topic=${topic} data=`, data);
+}
+
+function onSocketOpen(topic, data) {
+	_this.log.debug(`onSocketOpen: topic=${topic} data=`, data);
 }
 
 function onNotification(topic, data) {
@@ -93,6 +108,7 @@ function onNotification(topic, data) {
 				_this.log.info(_this.templateService.executeTemplate("Heartbeat ({{# def.now() }}): {{= it.eventBody.message }}", data, defs));
 				return;
 		}
+
 
 		// Presence
 		var presenceMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.presence/i);
@@ -115,6 +131,7 @@ function onNotification(topic, data) {
 			return;
 		}
 
+
 		// RoutingStatus
 		var routingStatusMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.routingStatus/i);
 		if (routingStatusMatch) {
@@ -134,6 +151,7 @@ function onNotification(topic, data) {
 				_this.log.warn('Template execution failed! No message returned.');
 			return;
 		}
+
 
 		// Conversation summary
 		var conversationMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.conversationsummary/i);
