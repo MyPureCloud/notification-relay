@@ -15,6 +15,10 @@ if (config.data.settings.enableSdkDebugging === true) {
 	var sdkDebugLog = new Logger('purecloud-sdk', logLevel);
 	client.setDebugLog(sdkDebugLog.debug.bind(sdkDebugLog), 25);
 }
+if (config.data.pureCloud && config.data.pureCloud.environment) {
+	log.debug(`Setting PureCloud environment: ${config.data.pureCloud.environment}`);
+	client.setEnvironment(config.data.pureCloud.environment);
+}
 var authorizationApi = new platformClient.AuthorizationApi();
 var notificationsApi = new platformClient.NotificationsApi();
 var presenceApi = new platformClient.PresenceApi();
