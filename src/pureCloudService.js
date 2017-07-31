@@ -27,20 +27,7 @@ var usersApi = new platformClient.UsersApi();
 
 
 
-function PureCloud() {
-	client.loginClientCredentialsGrant(config.data.pureCloud.clientId, config.data.pureCloud.clientSecret)
-		.then(function() {
-			// Do authenticated things 
-		})
-		.catch(function(response) {
-			if (response.status) {
-				log.error(`${response.status} - ${response.error.message}`);
-				log.error(response.error);
-			} else {
-				log.error(response);
-			}
-		});
-}
+function PureCloud() {}
 
 PureCloud.prototype.login = function() {
 	var deferred = Q.defer();
@@ -55,12 +42,7 @@ PureCloud.prototype.login = function() {
 			deferred.resolve();
 		})
 		.catch(function(response) {
-			if (response.status) {
-				log.error(`${response.status} - ${response.error.message}`);
-				log.error(response.error);
-			} else {
-				log.error(response);
-			}
+			traceError(response, 'Authentication failed');
 			deferred.reject(response);
 		});
 
@@ -77,12 +59,7 @@ PureCloud.prototype.createChannel = function() {
 			deferred.resolve(data);
 		})
 		.catch(function(response) {
-			if (response.status) {
-				log.error(`${response.status} - ${response.error.message}`);
-				log.error(response.error);
-			} else {
-				log.error(response);
-			}
+			traceError(response);
 			deferred.reject(response);
 		});
 
@@ -108,8 +85,9 @@ PureCloud.prototype.getOrCreateChannel = function() {
 			.then(function(channel) {
 				deferred.resolve(channel);
 			})
-			.catch(function(err) {
-				deferred.reject(err);
+			.catch(function(response) {
+				traceError(response);
+				deferred.reject(response);
 			});
 	}
 
@@ -140,12 +118,7 @@ PureCloud.prototype.subscribeTopics = function(topics, channelId, replace) {
 			deferred.resolve(data);
 		})
 		.catch(function(response) {
-			if (response.status) {
-				log.error(`${response.status} - ${response.error.message}`);
-				log.error(response.error);
-			} else {
-				log.error(response);
-			}
+			traceError(response);
 			deferred.reject(response);
 		});
 
@@ -158,15 +131,39 @@ PureCloud.prototype.subscribeTopics = function(topics, channelId, replace) {
  * Helpers
  */
 
-PureCloud.prototype.getUsers = function() {
+function traceError(error, customMessage) {
+	try {
+		var status = '0';
+		var message;
+
+		if (error.status)
+			status = error.status;
+		if (error.error) {
+			message = error.error.message;
+		} else if (error.message) {
+			message = error.message;
+		}
+
+		if (customMessage)
+			customMessage = customMessage.toString().trim() + ': ';
+		else
+			customMessage = '';
+		
+		log.error(`${customMessage}${status} - ${message}`);
+	} catch(err) {
+		log.error(err);
+	}
+}
+
+PureCloud.prototype.getUsers = function(expand) {
 	// Returns a promise
-	return getUsersImpl();
+	return getUsersImpl(undefined, expand);
 };
 
-function getUsersImpl(users = {}, deferred = Q.defer(), pageNumber = 1) {
+function getUsersImpl(users = {}, expand = [], deferred = Q.defer(), pageNumber = 1) {
 	var _this = this;
 
-	usersApi.getUsers({ 'pageSize': 100, 'pageNumber': pageNumber })
+	usersApi.getUsers({ 'pageSize': 100, 'pageNumber': pageNumber, expand: expand })
 	  .then(function(data) {
 	  	// Add users to cache
 	  	_.forEach(data.entities, function(user) {
@@ -184,12 +181,7 @@ function getUsersImpl(users = {}, deferred = Q.defer(), pageNumber = 1) {
 	  	getUsersImpl(users, deferred, pageNumber + 1);
 	  })
 		.catch(function(response) {
-			if (response.status) {
-				log.error(`${response.status} - ${response.error.message}`);
-				log.error(response.error);
-			} else {
-				log.error(response);
-			}
+			traceError(response);
 			deferred.reject(response);
 		});
 
@@ -222,12 +214,7 @@ function getQueuesImpl(queues = {}, deferred = Q.defer(), pageNumber = 1) {
 	  	getQueuesImpl(queues, deferred, pageNumber + 1);
 	  })
 		.catch(function(response) {
-			if (response.status) {
-				log.error(`${response.status} - ${response.error.message}`);
-				log.error(response.error);
-			} else {
-				log.error(response);
-			}
+			traceError(response);
 			deferred.reject(response);
 		});
 
@@ -260,12 +247,7 @@ function getPresencesImpl(presences = {}, deferred = Q.defer(), pageNumber = 1) 
 	  	getPresencesImpl(presences, deferred, pageNumber + 1);
 	  })
 		.catch(function(response) {
-			if (response.status) {
-				log.error(`${response.status} - ${response.error.message}`);
-				log.error(response.error);
-			} else {
-				log.error(response);
-			}
+			traceError(response);
 			deferred.reject(response);
 		});
 
