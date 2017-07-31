@@ -20,12 +20,12 @@ log.writeBox(`Notification Relay\n${(new moment()).format('h:mm:ss a')}`);
 
 log.debug('Debug message');
 
-
+log.info('Autenticating with PureCloud...');
 pureCloud.login()
 	.then(function() {
 		log.info('Populating default cache...');
 		// TODO: Populate cache with entities defined in config (users, queues, etc)
-		return pureCloud.getUsers();
+		return pureCloud.getUsers([ 'presence', 'routingStatus', 'conversationSummary' ]);
 	})
 	.then(function(users) {
 		cache.set('users', users);
@@ -52,5 +52,5 @@ pureCloud.login()
 		});
 	})
 	.catch(function(err) {
-		console.log(err);
+		log.error(err);
 	});

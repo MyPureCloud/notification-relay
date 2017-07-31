@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Notification Relay: example-web</title>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+	<style type="text/css">
+		html, body {
+			color: #4C4C4C;
+		}
+		.active-conversations {
+			border: 1px solid green;
+			border-radius: 4px;
+			padding: 0 2px;
+			background: lightgreen;
+			color: black;
+		}
+
+		.presence-available { background: #77dd22; }
+
+		.presence-away, 
+		.presence-break, 
+		.presence-meal, 
+		.presence-training { background: #ffbb33; }
+
+		.presence-busy, 
+		.presence-meeting { background: #ff0000; color: #F6F6F6; }
+
+		.presence-offline { background: #666666; color: #F6F6F6; }
+
+		.presence-onqueue { background: #52cef8; }
+
+		[class^="presence-"] {
+			border-radius: 6px;
+			padding: 2px 4px;
+			width: 80%;
+			display: block;
+			text-align: center;
+			margin: auto 10% !important;
+		}
+	</style>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+
+	<script language="javascript" type="text/javascript">
+	  var wsUri = "ws://localhost:9000";
+	  var output;
+
+	  function init()
+	  {
+	    output = document.getElementById("output");
+	    testWebSocket();
+	  }
+
+	  function testWebSocket()
+	  {
+	    websocket = new WebSocket(wsUri);
+	    websocket.onopen = function(evt) { onOpen(evt); };
+	    websocket.onclose = function(evt) { onClose(evt); };
+	    websocket.onmessage = function(evt) { onMessage(evt); };
+	    websocket.onerror = function(evt) { onError(evt); };
+	  }
+
+	  function onOpen(evt)
+	  {
+	    console.log("CONNECTED");
+	    doSend('cacheinit');
+	  }
+
+	  function onClose(evt)
+	  {
+	    console.log("DISCONNECTED");
+	  }
+
+	  function onMessage(evt)
+	  {
+	    writeToScreen(evt.data);
+	  }
+
+	  function onError(evt)
+	  {
+	    console.error('<span style="color: red;">ERROR:</span> ' + evt.data);
+	  }
+
+	  function doSend(message)
+	  {
+	    console.log("SENT: " + message);
+	    websocket.send(message);
+	  }
+
+	  function writeToScreen(message)
+	  {
+	  	console.log(`message: ${message}`);
+	  	try {
+	  		var m = JSON.parse(message);
+	  		var userDom = $('#'+m.user.id);
+	  		if (userDom.length === 0) {
+					$('#users').append(
+						`<tr id="${m.user.id}">` +
+							`<td class="name"></td>` +
+							`<td class="presence"></td>` +
+							`<td class="routingStatus"></td>` +
+							`<td class="text-center calls"></td>` +
+							`<td class="text-center callbacks"></td>` +
+							`<td class="text-center emails"></td>` +
+							`<td class="text-center chats"></td>` +
+						`</tr>`);
+	  			userDom = $('#'+m.user.id);
+	  		}
+
+	  		userDom.children('.name').html(m.user.name);
+	  		userDom.children('.presence').html(formatPresenceMessage(m.presence.label, m.presence.systemPresence));
+	  		userDom.children('.routingStatus').html(m.routingStatus.status);
+	  		userDom.children('.calls').html(formatMediaCounts(m.conversationSummary.call));
+	  		userDom.children('.callbacks').html(formatMediaCounts(m.conversationSummary.callback));
+	  		userDom.children('.emails').html(formatMediaCounts(m.conversationSummary.email));
+	  		userDom.children('.chats').html(formatMediaCounts(m.conversationSummary.chat));
+	  	} catch(err) {
+	  		// Suppress error. Everything we expect to handle is JSON
+	  		console.error(err);
+	  	}
+	  }
+
+	  function formatPresenceMessage(label, systemPresence) {
+	  	if (!systemPresence) return label;
+
+	  	var cssClass = '';
+	  	switch (systemPresence.toLowerCase()) {
+	  		case 'on queue': {
+	  			cssClass = 'presence-onqueue';
+	  			break;
+	  		}
+	  		case 'available': {
+	  			cssClass = 'presence-available';
+	  			break;
+	  		}
+	  		case 'away': {
+	  			cssClass = 'presence-away';
+	  			break;
+	  		}
+	  		case 'break': {
+	  			cssClass = 'presence-break';
+	  			break;
+	  		}
+	  		case 'meal': {
+	  			cssClass = 'presence-meal';
+	  			break;
+	  		}
+	  		case 'training': {
+	  			cssClass = 'presence-training';
+	  			break;
+	  		}
+	  		case 'busy': {
+	  			cssClass = 'presence-busy';
+	  			break;
+	  		}
+	  		case 'meeting': {
+	  			cssClass = 'presence-meeting';
+	  			break;
+	  		}
+	  		case 'offline': {
+	  			cssClass = 'presence-offline';
+	  			break;
+	  		}
+	  	}
+
+	  	return `<span class="${cssClass}">${label}</span>`;
+	  }
+
+	  function formatMediaCounts(media) {
+	  	return `CC ${formatMediaNumber(media.contactCenter.active)}/${formatMediaNumber(media.contactCenter.acw)} | E ${formatMediaNumber(media.enterprise.active)}/${formatMediaNumber(media.enterprise.acw)}`;
+	  }
+
+	  function formatMediaNumber(i) {
+	  	if (i > 0) 
+	  		return `<span class="active-conversations">${i}</span>`;
+	  	else
+	  		return i;	
+	  }
+
+	  window.addEventListener("load", init, false);
+  </script>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Notification Relay <small>example-web</small></h1>
+</div>
+
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+		<table class="table table-hover">
+			<thead>
+				<tr>
+					<th>Username</th>
+					<th class="text-center">Presence</th>
+					<th>Routing Status</th>
+					<th class="text-center"><i class="fa fa-phone" aria-hidden="true"></i></span></th>
+					<th class="text-center"><i class="fa fa-arrow-circle-o-left" aria-hidden="true"></i></span></th>
+					<th class="text-center"><i class="fa fa-envelope-o" aria-hidden="true"></i></span></th>
+					<th class="text-center"><i class="fa fa-comments-o" aria-hidden="true"></i></span></th>
+				</tr>
+			</thead>
+			<tbody id="users">
+				
+			</tbody>
+		</table>
+	</div>
+</div>
+
+</body>
+</html>

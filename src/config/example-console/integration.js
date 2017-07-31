@@ -16,14 +16,14 @@ const CHANNEL_METADATA_TOPIC = "channel.metadata";
 var _this;
 var usersApi = new platformClient.UsersApi();
 
-function Integration(integration, logger, templateService, instanceCache, defaultCache) {
+function Integration(serviceProvder) {
 	// Keep track of services
 	_this = this;
-	this.integration = integration;
-	this.log = logger;
-	this.templateService = templateService;
-	this.cache = instanceCache;
-	this.defaultCache = defaultCache;
+	this.integration = serviceProvder.integration;
+	this.log = serviceProvder.logger;
+	this.templateService = serviceProvder.templateService;
+	this.cache = serviceProvder.instanceCache;
+	this.defaultCache = serviceProvder.defaultCache;
 
 	// Set callbacks for events
 	this.integration.setCallback(this.integration.eventStrings.INITIALIZED, onInitialized);

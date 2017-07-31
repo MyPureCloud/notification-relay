@@ -35,7 +35,6 @@ function Logger(topic, level) {
 
 
 
-
 Logger.prototype.setLogLevel = function(level) {
 	level = checkLevel(level);
 	this.log.transports.console.level = level;
@@ -62,11 +61,11 @@ Logger.prototype.formatMessage = function(msg, data) {
 	if (msg && msg instanceof Error) {
 		trace += msg.stack;
 	} else if (msg && typeof(msg) === 'object') {
-		trace += JSON.stringify(msg,null,2);
+		trace += JSON.stringify(msg, censor(msg) ,2);
 	}	else {
 		trace += msg;
 		if (data && typeof(data) === 'object') {
-			trace += ' ' + JSON.stringify(data,null,2);
+			trace += ' ' + simpleStringify(data);
 		} else if (data) {
 			trace += data;
 		}
@@ -74,7 +73,6 @@ Logger.prototype.formatMessage = function(msg, data) {
 
 	return trace;
 };
-
 
 Logger.prototype.writeBoxedLine = function(string, width, padchar, level) {
 	level = checkLevel(level);
@@ -143,5 +141,47 @@ function pad(value, length, padchar) {
 }
 
 function checkLevel(level) { return level ? level : 'debug'; }
+
+// Inspired by https://stackoverflow.com/questions/4816099/chrome-sendrequest-error-typeerror-converting-circular-structure-to-json/4816258
+function simpleStringify (object) {
+	var simpleObject = {};
+	for (var prop in object ){
+		if (!object.hasOwnProperty(prop) ||
+			typeof(object[prop]) == 'object' || 
+			typeof(object[prop]) == 'function') {
+			continue;
+		}
+		simpleObject[prop] = object[prop];
+	}
+	return JSON.stringify(simpleObject, censor(simpleObject),2);
+}
+
+function censor(censor) {
+  var i = 0;
+  var lastValue;
+
+  return function(key, value) {
+
+    if(i !== 0 && typeof(censor) === 'object' && typeof(value) == 'object' && censor == value) 
+      return '[Circular]'; 
+
+    if(i >= 27) { 
+    	// seems to be a harded maximum of 30 serialized objects?
+      return '[Unknown]';
+    }
+
+    // Increment if we're looping, otherwise reset
+    if (lastValue !== value) {
+    	lastValue = value;
+    	i = 0;
+    } else {
+    	++i; // so we know we aren't using the original object anymore
+		}
+
+    return value;  
+  };
+}
+
+
 
 self = module.exports = Logger;

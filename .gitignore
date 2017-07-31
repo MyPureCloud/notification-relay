@@ -8,6 +8,7 @@ src/config.json
 # only allow certain configs to be checked in
 src/config/*
 !src/config/example-console/
+!src/config/example-web/
 
 
 

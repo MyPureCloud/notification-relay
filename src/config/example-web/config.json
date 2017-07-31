@@ -1,0 +1,5 @@
+{
+	"name": "Example Integration - web",
+	"logTopic": "example-web",
+	"modulePath": "./config/example-web/integration.js"
+}

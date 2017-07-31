@@ -20,12 +20,14 @@ function Integration(integrationConfiguration) {
 
 	if (this.selfConfig.modulePath) {
 		this.log.info(`Loading module from ${this.selfConfig.modulePath}`);
-		this.module = new (require(this.selfConfig.modulePath))(
-			this,
-			new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel')),
-			new TemplateService(),
-			cache.addInstance(this.selfConfig.name),
-			cache);
+		this.module = new (require(this.selfConfig.modulePath))({
+			'integrationService': this,
+			'logger': new Logger(this.selfConfig.logTopic, config.data.get('settings.logLevel')),
+			'templateService': new TemplateService(),
+			'instanceCache': cache.addInstance(this.selfConfig.name),
+			'defaultCache': cache,
+			'socketManager': socketManager
+		});
 	}
 
 	this.handleMessage(this.eventStrings.INITIALIZED);
@@ -99,6 +101,9 @@ Integration.prototype.subscribeNotifications = function(subscriptions, replaceEx
 				.catch(function(err) {
 					deferred.reject(err);
 				});
+		})
+		.catch(function(err) {
+			deferred.reject(err);
 		});
 
 	return deferred.promise;
@@ -150,7 +155,7 @@ Integration.prototype.ensureChannel = function() {
 
 	pureCloud.getOrCreateChannel()
 		.then(function(channel) {
-			socketManager.connect(channel.connectUri, _this.handleMessage.bind(_this));
+			socketManager.connectWebSocket(channel.connectUri, _this.handleMessage.bind(_this));
 			deferred.resolve(channel);
 		})
 		.catch(function(err) {
