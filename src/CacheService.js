@@ -38,6 +38,10 @@ Cache.prototype.set = function(key, value) {
 	this.data[key] = value;
 };
 
+Cache.prototype.getData = function() {
+	return this.data;
+};
+
 
 
 module.exports = new Cache();

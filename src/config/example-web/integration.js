@@ -30,6 +30,7 @@ function Integration(serviceProvder) {
 	this.socketManager = serviceProvder.socketManager;
 
 	// Add additional caches
+	this.cache.addInstance('users');
 	this.cache.addInstance('presence');
 	this.cache.addInstance('routingStatus');
 	this.cache.addInstance('conversationSummary');
@@ -42,8 +43,22 @@ function Integration(serviceProvder) {
 
 	// Generate list of topics to which to subscribe
 	var topics = [];
-	this.log.debug(`There are ${_.keys(_this.defaultCache.get('users')).length} users in the default cache`);
-	_.forEach(_this.defaultCache.get('users'), function(user) {
+	if (this.integration.selfConfig.users) {
+		this.log.debug(`There are ${this.integration.selfConfig.users.length} users defined in the config`);
+		_.forEach(this.integration.selfConfig.users, function(userId) {
+			var user = _this.defaultCache.get('users')[userId];
+			if (user)
+				_this.cache.getInstance('users').set(userId, user);
+			else
+				_this.log.error(`Unable to find user ${userId} in user cache! Skipping user`);
+		});
+	} else {
+		this.log.debug(`There are ${_.keys(this.defaultCache.get('users')).length} users in the default cache`);
+		_.forEach(this.defaultCache.get('users'), function(user) {
+			_this.cache.getInstance('users').set(user.id, user);
+		});
+	}
+	_.forEach(this.cache.getInstance('users').getData(), function(user) {
 		topics.push(`v2.users.${user.id}.presence`);
 		topics.push(`v2.users.${user.id}.routingStatus`);
 		topics.push(`v2.users.${user.id}.conversationsummary`);
@@ -85,7 +100,7 @@ function connectionCallback(socket, request) {
 	socket.on('message', function incoming(message) {
     _this.log.info('received: ', message);
     if (message === 'cacheinit') {
-    	_.forEach(_.keys(_this.defaultCache.get('users')), function(userId) {
+    	_.forEach(_.keys(_this.cache.getInstance('users').getData()), function(userId) {
 				sendSocketMessage(getUserForTransport(userId));
     	});
     }
@@ -154,7 +169,7 @@ function getUser(id) {
 		return;
 	}
 
-	var user = _this.defaultCache.get('users')[id];
+	var user = _this.cache.getInstance('users').get(id);
 	if (!user)
 		_this.log.warn(`getUser: No user in cache for ID ${id}`);
 
