@@ -19,7 +19,7 @@ var usersApi = new platformClient.UsersApi();
 function Integration(serviceProvder) {
 	// Keep track of services
 	_this = this;
-	this.integration = serviceProvder.integration;
+	this.integration = serviceProvder.integrationService;
 	this.log = serviceProvder.logger;
 	this.templateService = serviceProvder.templateService;
 	this.cache = serviceProvder.instanceCache;

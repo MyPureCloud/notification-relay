@@ -178,7 +178,7 @@ function getUsersImpl(users = {}, expand = [], deferred = Q.defer(), pageNumber 
 	  	}
 
 	  	// Recurse function
-	  	getUsersImpl(users, deferred, pageNumber + 1);
+	  	getUsersImpl(users, expand, deferred, pageNumber + 1);
 	  })
 		.catch(function(response) {
 			traceError(response);
