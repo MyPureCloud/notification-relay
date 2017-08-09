@@ -135,21 +135,38 @@ function traceError(error, customMessage) {
 	try {
 		var status = '0';
 		var message;
+		var correlationId;
 
+		// Look for correlation ID
+		if (error.headers) {
+			// _.find will return the value of the item when the function returns true
+			correlationId = _.find(error.headers, function(value, key) {
+				return key.toLowerCase() === 'inin-correlation-id';
+			});
+
+			if (correlationId)
+				correlationId = ` (correlation id: ${correlationId})`;
+		}
+
+		// Get HTTP status code
 		if (error.status)
 			status = error.status;
+
+		// Get error message
 		if (error.error) {
 			message = error.error.message;
 		} else if (error.message) {
 			message = error.message;
 		}
 
+		// Format custom message
 		if (customMessage)
 			customMessage = customMessage.toString().trim() + ': ';
 		else
 			customMessage = '';
 		
-		log.error(`${customMessage}${status} - ${message}`);
+		// Log it
+		log.error(`${customMessage}${status} - ${message}${correlationId}`);
 	} catch(err) {
 		log.error(err);
 	}
