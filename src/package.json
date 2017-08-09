@@ -35,6 +35,7 @@
     "purecloud-platform-client-v2": "^6.1.3",
     "q": "^1.5.0",
     "winston": "^2.3.1",
-    "ws": "^3.1.0"
+    "ws": "^3.1.0",
+    "express": "^4.15.4"
   }
 }
