@@ -5,7 +5,7 @@
 	"subscriptions": {
 		"v2.users.{id}.presence": { "$ref": "#/users"},
 		"v2.users.{id}.routingStatus": { "$ref": "#/users"},
-		"v2.users.{id}.conversationsummary": { "$ref": "#/users"}
+		"v2.users.{id}.activity": { "$ref": "#/users"}
 	},
 	"users": [
 		"9ed7d9f6-0c59-4360-ac54-40dd35eb9c2f",

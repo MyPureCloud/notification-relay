@@ -100,15 +100,19 @@ function onSocketOpen(topic, data) {
 function onNotification(topic, data) {
 	/*
 	 * For more information on template formatting, see the doT docs: http://olado.github.io/doT/
+	 * 
+	 * This function receives a notification from PureCloud, matches the topic, updates data in the 
+	 * cache where appropriate, formats a message, and sends the message to all connected clients. 
 	 */
 	
 	try {
 		// Heartbeat
 		if (topic.toLowerCase() == CHANNEL_METADATA_TOPIC) {
-				_this.log.info(_this.templateService.executeTemplate("Heartbeat ({{# def.now() }}): {{= it.eventBody.message }}", data, defs));
-				return;
+			// The 'defs' module is available as 'def' and the 'data' object is available as 'it'
+			_this.log.info(_this.templateService.executeTemplate("Heartbeat ({{# def.now() }}): {{= it.eventBody.message }}", data, defs));
+			return;
 		}
-
+		
 
 		// Presence
 		var presenceMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.presence/i);
@@ -178,7 +182,17 @@ function onNotification(topic, data) {
 			return;
 		}
 
-		_this.log.info(`On notification: topic=${topic} data=`, data);
+
+		// TODO: Activity
+		var activityMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.activity/i);
+		if (activityMatch) {
+			_this.log.info(`User activity for ${activityMatch[1]}`, data.eventBody);
+
+			return;
+		}
+
+		// Only called when topic isn't matched
+		_this.log.warn(`Unmatched notification topic: ${topic}`);
 	} catch(err) {
 		_this.log.error(`Error handling notification: ${err.message}`);
 		_this.log.error(err);
