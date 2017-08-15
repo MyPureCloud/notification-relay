@@ -15,8 +15,8 @@ function Defs() {
 // Functions
 
 // Returns the current date and time in the given format
-Defs.prototype.now = function(format) {
-	return (new moment()).format(format ? format : 'h:mm:ss a');
+Defs.prototype.now = function(format, momentDate) {
+	return (momentDate ? momentDate : (new moment())).format(format ? format : 'h:mm:ss a');
 };
 
 // Export module instance

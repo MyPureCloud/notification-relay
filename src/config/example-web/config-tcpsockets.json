@@ -1,0 +1,8 @@
+{
+	"name": "Example Integration - tcp",
+	"logTopic": "example-tcp",
+	"modulePath": "./config/example-web/integration.js",
+	"serverSocketType": "tcp",
+	"serverSocketPort": 9000,
+	"webServerPort": 8080
+}

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Notification Relay: example-web</title>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+	<style type="text/css">
+		html, body {
+			color: #4C4C4C;
+		}
+
+		.active-conversations {
+			border: 1px solid green;
+			border-radius: 4px;
+			padding: 0 2px;
+			background: lightgreen;
+			color: black;
+		}
+
+		.presence-available { background: #77dd22; }
+
+		.presence-away, 
+		.presence-break, 
+		.presence-meal, 
+		.presence-training { background: #ffbb33; }
+
+		.presence-busy, 
+		.presence-meeting { background: #ff0000; color: #F6F6F6; }
+
+		.presence-offline { background: #666666; color: #F6F6F6; }
+
+		.presence-onqueue { background: #52cef8; }
+
+		[class^="presence-"] {
+			border-radius: 6px;
+			padding: 2px 4px;
+			width: 80%;
+			display: block;
+			text-align: center;
+			margin: auto 10% !important;
+		}
+	</style>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+
+	<script language="javascript" type="text/javascript">
+	  var wsUri = "ws://localhost:9000";
+  	var presenceClassMap = {
+  		'on queue': 'presence-onqueue',
+  		'available': 'presence-available',
+  		'away': 'presence-away',
+  		'break': 'presence-break',
+  		'meal': 'presence-meal',
+  		'training': 'presence-training',
+  		'busy': 'presence-busy',
+  		'meeting': 'presence-meeting',
+  		'offline': 'presence-offline'
+  	};
+
+	  $(document).ready(function init() {
+	    websocket = new WebSocket(wsUri);
+	    websocket.onopen = onWebSocketOpen;
+	    websocket.onclose = onWebSocketClose;
+	    websocket.onmessage = onWebSocketMessage;
+	    websocket.onerror = onWebSocketError;
+	  });
+
+	  /* 
+	   * WebSocket functions
+	   */
+
+	  // WebSocket connection to server has been established
+	  function onWebSocketOpen()
+	  {
+	    console.log("WebSocket connected");
+	    sendWebSocketMessage('cacheinit');
+	  }
+
+	  // WebSocket connection has been closed
+	  function onWebSocketClose()
+	  {
+	    console.log("WebSocket disconnected");
+	  }
+
+	  // Receive incoming message
+	  function onWebSocketMessage(message)
+	  {
+	  	// Set last contact date in UI
+	  	$('#lastContact').html(new Date());
+
+	  	// Parse message to JSON
+	  	var json;
+	  	try {
+	  		json = JSON.parse(message.data);
+	  	} catch(err) {
+	  		console.error(err);
+	  	}
+
+	  	// Handle message
+	  	if (json && json.type === 'user') {
+	  		updateUser(json.body, json.initiator);
+	  	} else if (json) {
+	  		console.log('event data: ', json);
+	  	} else {
+	  		console.log(`event data: ${message.data}`);
+	  	}
+	  }
+
+	  // Error from WebSocket
+	  function onWebSocketError(err)
+	  {
+	    console.error(err);
+	  }
+
+	  // Send a message to the WebSocket server
+	  function sendWebSocketMessage(message)
+	  {
+	    console.log(`Sending: ${message}`);
+	    websocket.send(message);
+	  }
+
+	  /*
+	   * Generic functions
+	   */
+	  
+	  // Add/update a user's row in the UI
+	  function updateUser(user)
+	  {
+	  	console.log('user update: ', user);
+
+	  	try {
+	  		// Get or create row for user
+	  		var userDom = $('#'+user.user.id);
+	  		if (userDom.length === 0) {
+					$('#users').append(
+						`<tr id="${user.user.id}">` +
+							`<td class="name"></td>` +
+							`<td class="presence"></td>` +
+							`<td class="routingStatus"></td>` +
+							`<td class="text-center calls"></td>` +
+							`<td class="text-center callbacks"></td>` +
+							`<td class="text-center emails"></td>` +
+							`<td class="text-center chats"></td>` +
+						`</tr>`);
+	  			userDom = $('#'+user.user.id);
+	  		}
+
+	  		// Set user data
+	  		userDom.children('.name').html(user.user.name);
+	  		userDom.children('.presence').html(formatPresenceMessage(user.presence.label, user.presence.systemPresence));
+	  		userDom.children('.routingStatus').html(user.routingStatus.status);
+	  		userDom.children('.calls').html(formatMediaCounts(user.conversationSummary.call));
+	  		userDom.children('.callbacks').html(formatMediaCounts(user.conversationSummary.callback));
+	  		userDom.children('.emails').html(formatMediaCounts(user.conversationSummary.email));
+	  		userDom.children('.chats').html(formatMediaCounts(user.conversationSummary.chat));
+
+	  		// Update user last update timesteamp
+	  		$('#lastUpdated').html(new Date());
+	  	} catch(err) {
+	  		console.error(err);
+	  	}
+	  }
+
+	  function formatPresenceMessage(label, systemPresence) {
+	  	if (!systemPresence) return label;
+	  	return `<span class="${presenceClassMap[systemPresence.toLowerCase()]}">${label}</span>`;
+	  }
+
+	  function formatMediaCounts(media) {
+	  	return `CC ${formatMediaNumber(media.contactCenter.active)}/${formatMediaNumber(media.contactCenter.acw)} | E ${formatMediaNumber(media.enterprise.active)}/${formatMediaNumber(media.enterprise.acw)}`;
+	  }
+
+	  function formatMediaNumber(i) {
+	  	if (i > 0) 
+	  		return `<span class="active-conversations">${i}</span>`;
+	  	else
+	  		return i;	
+	  }
+  </script>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Notification Relay <small>example-web</small></h1>
+</div>
+
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th>Username</th>
+						<th class="text-center">Presence</th>
+						<th>Routing Status</th>
+						<th class="text-center"><i class="fa fa-phone" aria-hidden="true"></i></span></th>
+						<th class="text-center"><i class="fa fa-arrow-circle-o-left" aria-hidden="true"></i></span></th>
+						<th class="text-center"><i class="fa fa-envelope-o" aria-hidden="true"></i></span></th>
+						<th class="text-center"><i class="fa fa-comments-o" aria-hidden="true"></i></span></th>
+					</tr>
+				</thead>
+				<tbody id="users">
+					
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+			<p>Last user data: <span id="lastUpdated"></span></p><br />
+			<p>Last contact: <span id="lastContact"></span></p>
+	</div>
+</div>
+
+
+
+</body>
+</html>

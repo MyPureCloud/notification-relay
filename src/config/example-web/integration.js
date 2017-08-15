@@ -8,6 +8,9 @@
 
 // Import node modules
 const _  = require('lodash');
+const express = require('express');
+const moment = require('moment');
+const path = require('path');
 const platformClient = require('purecloud-platform-client-v2');
 
 // Import the def module used in the templates
@@ -18,7 +21,11 @@ const CHANNEL_METADATA_TOPIC = "channel.metadata";
 // Set instance variables
 var _this;
 var usersApi = new platformClient.UsersApi();
+var webServer = express();
 
+
+
+// Module constructor
 function Integration(serviceProvder) {
 	// Keep track of services
 	_this = this;
@@ -80,18 +87,44 @@ function Integration(serviceProvder) {
 	});
 
 	// Subscribe to notifications via config object
-	this.log.debug('subscribing notifications');
+	this.log.debug(`subscribing to ${topics.length} notifications`);
 	this.integration.subscribeNotifications(topics);
 
-	// Open web socket server
+	// Listen for incoming socket connections
+	this.isTcpSocket = this.integration.selfConfig.serverSocketType && this.integration.selfConfig.serverSocketType.toLowerCase() === 'tcp';
 	this.serverSockets = [];
-	this.socketManager.listenWebSocket(9000, connectionCallback, errorCallback, listeningCallback, headersCallback);
+	if (this.isTcpSocket === true) {
+		// Use TCP socket
+		this.socketManager.listenTcpSocket(
+			this.integration.selfConfig.serverSocketPort, 
+			tcpSocketConnectionCallback, 
+			tcpSocketErrorCallback, 
+			tcpSocketListeningCallback, 
+			tcpSocketClosedCallback
+		);
+	} else {
+		// Default to using a web socket
+		this.socketManager.listenWebSocket(
+			this.integration.selfConfig.serverSocketPort, 
+			webSocketConnectionCallback, 
+			webSocketErrorCallback, 
+			webSocketListeningCallback, 
+			webSocketClosedCallback
+		);
+	}
+
+	// Start the express web server
+	startWebServer();
 }
 
-// TODO handle closed socket
 
-function connectionCallback(socket, request) {
-	_this.log.info('Incoming connection received');
+
+/* 
+ * WebSocket Callbacks 
+ */
+
+function webSocketConnectionCallback(socket, request) {
+	_this.log.info('Incoming WebSocket connection received');
 
   // Add socket to list
   _this.serverSockets.push(socket);
@@ -101,42 +134,36 @@ function connectionCallback(socket, request) {
     _this.log.info('received: ', message);
     if (message === 'cacheinit') {
     	_.forEach(_.keys(_this.cache.getInstance('users').getData()), function(userId) {
-				sendSocketMessage(getUserForTransport(userId));
+				sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId)));
     	});
     }
   });
 
+	// Handle socket closed
   socket.on('close', function closed(code, reason) {
   	_this.log.info(`Socket closed: ${code} - ${reason}`);
   	_.remove(_this.serverSockets, socket);
   });
  
  	// Send connection accepted message
-  sendSocketMessage({ state: 'ready' }, socket);
+  sendSocketMessage(wrapDataForTransport('state', { state: 'ready' }), socket);
 }
 
-function errorCallback(error) {
+function webSocketErrorCallback(error) {
 	_this.log.error(error);
 }
 
-function listeningCallback() {
-	_this.log.info('listeningCallback');
+function webSocketListeningCallback() {
+	_this.log.info('webSocketListeningCallback');
 }
 
-function headersCallback(headers, request) {
-	_this.log.silly(`headersCallback-headers:`, headers);
-	_this.log.silly(`headersCallback-request:`, request);
+function webSocketClosedCallback() {
+	_this.log.info('webSocketClosedCallback');
 }
 
-function sendSocketMessage(message, socket) {
+function sendWebSocketMessage(message, socket) {
 	try {
-		// Can only send strings
-		var messageString = message;
-		if (typeof message === 'object')
-			messageString = JSON.stringify(message);
-		else if (message && typeof message != 'string' && typeof message.toString === 'function')
-			messageString = message.toString();
-
+		var messageString = socketMessageToString(message);
 		if (socket) {
 			socket.send(messageString);
 		} else {
@@ -152,10 +179,149 @@ function sendSocketMessage(message, socket) {
 
 
 
+/*
+ * TCP Socket functions
+ */
+
+function tcpSocketConnectionCallback(socket) {
+	_this.log.info('Incoming TCP connection received');
+
+  // Add socket to list
+  _this.serverSockets.push(socket);
+
+	// Set incoming message callback
+	socket.on('data', function incoming(message) {
+		// byte array to string
+		message = message.toString();
+
+    _this.log.info('received: ', message);
+    if (message === 'cacheinit') {
+    	_.forEach(_.keys(_this.cache.getInstance('users').getData()), function(userId) {
+				sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId)));
+    	});
+    }
+  });
+
+	// Handle socket closed
+  socket.on('close', function closed() {
+  	_this.log.info(`TCP socket closed`);
+  	_.remove(_this.serverSockets, socket);
+  });
+ 
+ 	// Send connection accepted message
+  sendSocketMessage(wrapDataForTransport('state', { state: 'ready' }), socket);
+}
+
+function tcpSocketErrorCallback(error) {
+	_this.log.error(error);
+}
+
+function tcpSocketListeningCallback() {
+	_this.log.info('TCP server started');
+}
+
+function tcpSocketClosedCallback() {
+	_this.log.info('TCP server stopped');
+}
+
+function sendTcpSocketMessage(message, socket) {
+	try {
+		var messageString = socketMessageToString(message);
+		if (socket) {
+			socket.write(messageString);
+		} else {
+			_.forEach(_this.serverSockets, function(socket) {
+				_this.log.debug(`sending message ${messageString}`);
+				socket.write(messageString);
+			});
+		}
+	} catch(err) {
+		_this.log.error(err);
+	}
+}
+
+
+
+/*
+ * Generic socket functions
+ */
+
+function sendSocketMessage(message, socket) {
+	if (_this.isTcpSocket === true)
+		sendTcpSocketMessage(message, socket);
+	else
+		sendWebSocketMessage(message, socket);
+}
+
+function socketMessageToString(message) {
+	try {
+		// Can only send strings
+		var messageString = message;
+		if (typeof message === 'object')
+			messageString = JSON.stringify(message);
+		else if (message && typeof message != 'string' && typeof message.toString === 'function')
+			messageString = message.toString();
+
+		return messageString;
+	} catch(err) {
+		_this.log.error(err);
+		return '';
+	}
+}
+
+
+
 
 module.exports = Integration;
 
 
+
+function startWebServer() {
+	// Path: / or /index.html
+	webServer.get(/^\/$|^\/index.html$/, function(req, res) {
+		try {
+			// Serve the index file from this directory
+			res.sendFile(path.join(__dirname, 'assets/index.html'));
+		} catch(err) {
+			_this.log.error(err);
+			if (res.headersSent !== true)
+				res.status(500).send(err.message ? `Error serving file: ${err.message}` : 'internal server error');
+		}
+	});
+
+	// Path: /favicon.ico
+	webServer.get('/favicon.ico', function(req, res) {
+		try {
+			// Serve the index file from this directory
+			res.sendFile(path.join(__dirname, 'assets/favicon.ico'));
+		} catch(err) {
+			_this.log.error(err);
+			if (res.headersSent !== true)
+				res.status(500).send(err.message ? `Error serving file: ${err.message}` : 'internal server error');
+		}
+	});
+
+	// Start express web server
+	var webServerPort = _this.integration.selfConfig.webServerPort ? _this.integration.selfConfig.webServerPort : 8080;
+	webServer.listen(webServerPort, function () {
+	  _this.log.debug(`Web server is running on port ${webServerPort}`);
+	});
+}
+
+function wrapDataForTransport(type, data, additionalData) {
+	var message = {
+		type: type,
+		body: data
+	};
+
+	if (additionalData) {
+		_.forEach(additionalData, function(value, key) {
+			message[key] = value;
+		});
+	}
+
+	return message;
+}
 
 /**
  * Gets a user object by ID from the default cache
@@ -269,7 +435,7 @@ function getUserConversationSummary(id) {
 	return conversationSummary;
 }
 
-function getUserForTransport(userId, initiator) {
+function getUserForTransport(userId) {
 	var user = getUser(userId);
 	var presence = getUserPresence(userId);
 	var routingStatus = getUserRoutingStatus(userId);
@@ -279,8 +445,7 @@ function getUserForTransport(userId, initiator) {
 		user: {
 			id: user.id,
 			name: user.name
-		},
-		initiator: initiator
+		}
 	};
 
 	if (presence) {
@@ -327,7 +492,7 @@ function getUserForTransport(userId, initiator) {
 
 
 
-// Event callbacks
+// PureCloud event callbacks
 
 function onInitialized(topic, data) {
 	_this.log.debug(`onInitialized: topic=${topic} data=`, data);
@@ -340,6 +505,9 @@ function onSocketOpen(topic, data) {
 function onNotification(topic, data) {
 	/*
 	 * For more information on template formatting, see the doT docs: http://olado.github.io/doT/
+	 *
+	 * This function receives a notification from PureCloud, matches the topic, updates data in the 
+	 * cache where appropriate, formats a message, and sends the message to all connected clients. 
 	 */
 	
 	try {
@@ -347,8 +515,12 @@ function onNotification(topic, data) {
 
 		// Heartbeat
 		if (topic.toLowerCase() == CHANNEL_METADATA_TOPIC) {
-				_this.log.info(_this.templateService.executeTemplate("Heartbeat ({{# def.now() }}): {{= it.eventBody.message }}", data, defs));
-				return;
+			// The 'defs' module is available as 'def' and the 'data' object is available as 'it'
+			_this.log.info(_this.templateService.executeTemplate(
+				"Heartbeat ({{# def.now() }}): {{= it.eventBody.message }}", data, defs));
+
+			sendSocketMessage(wrapDataForTransport('heartbeat', data.eventBody));
+			return;
 		}
 
 
@@ -356,12 +528,13 @@ function onNotification(topic, data) {
 		var presenceMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.presence/i);
 		if (presenceMatch) {
 			userId = presenceMatch[1];
+			_this.log.info(`(${defs.now(undefined, new moment(data.eventBody.modifiedDate))}) Presence changed for user ${userId}`);
 
 			// Update presence in cache
 			data.eventBody.presenceDefinition = getPresence(data.eventBody.presenceDefinition.id);
 			_this.cache.getInstance('presence').set(userId, data.eventBody);
 
-			sendSocketMessage(getUserForTransport(userId, 'presence'));
+			sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId), { initiator: 'presence' }));
 			
 			return;
 		}
@@ -371,11 +544,12 @@ function onNotification(topic, data) {
 		var routingStatusMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.routingStatus/i);
 		if (routingStatusMatch) {
 			userId = routingStatusMatch[1];
+			_this.log.info(`(${defs.now(undefined, new moment())}) RoutingStatus changed for user ${userId}`);
 
 			// Update routingStatus in cache
 			_this.cache.getInstance('routingStatus').set(userId, data.eventBody.routingStatus);
 
-			sendSocketMessage(getUserForTransport(userId, 'routingStatus'));
+			sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId), { initiator: 'routingStatus' }));
 
 			return;
 		}
@@ -385,16 +559,18 @@ function onNotification(topic, data) {
 		var conversationSummaryMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.conversationsummary/i);
 		if (conversationSummaryMatch) {
 			userId = conversationSummaryMatch[1];
+			_this.log.info(`(${defs.now(undefined, new moment())}) Conversation summary changed for user ${userId}`);
 
 			// Update routingStatus in cache
 			setUserConversationSummary(userId, data.eventBody);
 
-			sendSocketMessage(getUserForTransport(userId, 'conversationSummary'));
+			sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId), { initiator: 'conversationSummary' }));
 
 			return;
 		}
 
-		_this.log.info(`On notification: topic=${topic} data=`, data);
+		// Only called when topic isn't matched
+		_this.log.warn(`Unmatched notification topic: ${topic}`);
 	} catch(err) {
 		_this.log.error(`Error handling notification: ${err.message}`);
 		_this.log.error(err);

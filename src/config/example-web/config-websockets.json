@@ -1,0 +1,8 @@
+{
+	"name": "Example Integration - web",
+	"logTopic": "example-web",
+	"modulePath": "./config/example-web/integration.js",
+	"serverSocketType": "web",
+	"serverSocketPort": 9000,
+	"webServerPort": 8080
+}
