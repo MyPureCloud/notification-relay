@@ -1,0 +1,15 @@
+{
+	"pureCloud": {
+		"environment": "",
+		"clientId": "",
+		"clientSecret": ""
+	},
+	"settings": {
+		"logLevel": "debug",
+		"enableSdkDebugging": false
+	},
+	"integrations": [
+		{ "$ref": "./config/example-console/config.json" },
+		{ "$ref": "./config/example-web/config-websockets.json" }
+	]
+}

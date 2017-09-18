@@ -2,9 +2,6 @@
 
 local/
 
-# temporary while in dev
-src/config.json
-
 # only allow certain configs to be checked in
 src/config/*
 !src/config/example-console/
