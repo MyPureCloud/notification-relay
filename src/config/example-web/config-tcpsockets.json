@@ -3,6 +3,5 @@
 	"logTopic": "example-tcp",
 	"modulePath": "./config/example-web/integration.js",
 	"serverSocketType": "tcp",
-	"serverSocketPort": 9000,
-	"webServerPort": 8080
+	"serverSocketPort": 9000
 }

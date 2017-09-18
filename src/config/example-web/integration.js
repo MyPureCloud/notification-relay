@@ -116,10 +116,10 @@ function Integration(serviceProvder) {
 			webSocketErrorCallback, 
 			webSocketListeningCallback
 		);
-	}
 
-	// Start the express web server
-	startWebServer();
+		// Start the express web server
+		startWebServer();
+	}
 }
 
 
