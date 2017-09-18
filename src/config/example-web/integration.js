@@ -421,15 +421,11 @@ function setUserConversationSummary(id, summary) {
 }
 
 function setUserPresence(userId, presence) {
-	_this.log.debug('presence object: '+ JSON.stringify(presence,null,2));
-
 	// Get full presence object
 	var presenceObject = getPresence(presence.presenceDefinition.id);
-	_this.log.debug('before: ', presence);
 
 	// Add to user's presence
 	presence.presenceDefinition.label = presenceObject.label;
-	_this.log.debug('after: ', presence);
 
 	// Set in cache
 	_this.cache.getInstance('presence').set(userId, presence);
