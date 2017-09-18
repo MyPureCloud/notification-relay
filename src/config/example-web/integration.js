@@ -65,9 +65,15 @@ function Integration(serviceProvder) {
 			_this.cache.getInstance('users').set(user.id, user);
 		});
 	}
+	var i = 0;
 	_.forEach(this.cache.getInstance('users').getData(), function(user) {
-		topics.push(`v2.users.${user.id}.presence`);
-		topics.push(`v2.users.${user.id}.routingStatus`);
+		if (i >= 500) {
+			_this.log.warn('Max topics reached!');
+			return false;
+		} else {
+			i++;
+		}
+		topics.push(`v2.users.${user.id}.activity`);
 		topics.push(`v2.users.${user.id}.conversationsummary`);
 
 		// Load items from default cache
@@ -108,8 +114,7 @@ function Integration(serviceProvder) {
 			this.integration.selfConfig.serverSocketPort, 
 			webSocketConnectionCallback, 
 			webSocketErrorCallback, 
-			webSocketListeningCallback, 
-			webSocketClosedCallback
+			webSocketListeningCallback
 		);
 	}
 
@@ -155,10 +160,6 @@ function webSocketErrorCallback(error) {
 
 function webSocketListeningCallback() {
 	_this.log.info('webSocketListeningCallback');
-}
-
-function webSocketClosedCallback() {
-	_this.log.info('webSocketClosedCallback');
 }
 
 function sendWebSocketMessage(message, socket) {
@@ -363,7 +364,7 @@ function getPresence(id) {
 	// Set label
 	presence.label = presence.languageLabels['en_US'];
 
-	return presence;
+	return JSON.parse(JSON.stringify(presence));
 }
 
 function getUserPresence(id) {
@@ -379,7 +380,7 @@ function getUserPresence(id) {
 		return;
 	}
 
-	return presence;
+	return JSON.parse(JSON.stringify(presence));
 }
 
 function getUserRoutingStatus(id) {
@@ -395,7 +396,7 @@ function getUserRoutingStatus(id) {
 		return;
 	}
 
-	return routingStatus;
+	return JSON.parse(JSON.stringify(routingStatus));
 }
 
 function setUserConversationSummary(id, summary) {
@@ -417,6 +418,25 @@ function setUserConversationSummary(id, summary) {
 	});
 
 	_this.cache.getInstance('conversationSummary').set(id, summary);
+}
+
+function setUserPresence(userId, presence) {
+	_this.log.debug('presence object: '+ JSON.stringify(presence,null,2));
+
+	// Get full presence object
+	var presenceObject = getPresence(presence.presenceDefinition.id);
+	_this.log.debug('before: ', presence);
+
+	// Add to user's presence
+	presence.presenceDefinition.label = presenceObject.label;
+	_this.log.debug('after: ', presence);
+
+	// Set in cache
+	_this.cache.getInstance('presence').set(userId, presence);
+}
+
+function setUserRoutingStatus(userId, routingStatus) {
+	_this.cache.getInstance('routingStatus').set(userId, routingStatus);
 }
 
 function getUserConversationSummary(id) {
@@ -452,7 +472,7 @@ function getUserForTransport(userId) {
 		body.presence = {
 			label: presence.presenceDefinition.label,
 			systemPresence: presence.presenceDefinition.systemPresence,
-			modifiedDate: presence.modifiedDate
+			modifiedTime: presence.modifiedDate
 		};
 	} else {
 		body.presence = {
@@ -524,37 +544,6 @@ function onNotification(topic, data) {
 		}
 
 
-		// Presence
-		var presenceMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.presence/i);
-		if (presenceMatch) {
-			userId = presenceMatch[1];
-			_this.log.info(`(${defs.now(undefined, new moment(data.eventBody.modifiedDate))}) Presence changed for user ${userId}`);
-
-			// Update presence in cache
-			data.eventBody.presenceDefinition = getPresence(data.eventBody.presenceDefinition.id);
-			_this.cache.getInstance('presence').set(userId, data.eventBody);
-
-			sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId), { initiator: 'presence' }));
-			
-			return;
-		}
-
-
-		// Routing status
-		var routingStatusMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.routingStatus/i);
-		if (routingStatusMatch) {
-			userId = routingStatusMatch[1];
-			_this.log.info(`(${defs.now(undefined, new moment())}) RoutingStatus changed for user ${userId}`);
-
-			// Update routingStatus in cache
-			_this.cache.getInstance('routingStatus').set(userId, data.eventBody.routingStatus);
-
-			sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId), { initiator: 'routingStatus' }));
-
-			return;
-		}
-
-
 		// Conversation summary
 		var conversationSummaryMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.conversationsummary/i);
 		if (conversationSummaryMatch) {
@@ -565,6 +554,24 @@ function onNotification(topic, data) {
 			setUserConversationSummary(userId, data.eventBody);
 
 			sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId), { initiator: 'conversationSummary' }));
+
+			return;
+		}
+
+
+		// Activity
+		var activityMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.activity/i);
+		if (activityMatch) {
+			userId = activityMatch[1];
+			_this.log.info(`User activity for ${activityMatch[1]}`, data.eventBody);
+
+			if (data.eventBody.routingStatus)
+				setUserRoutingStatus(userId, data.eventBody.routingStatus);	
+
+			if (data.eventBody.presence)
+				setUserPresence(userId, data.eventBody.presence);
+
+			sendSocketMessage(wrapDataForTransport('user', getUserForTransport(userId), { initiator: 'activity' }));
 
 			return;
 		}

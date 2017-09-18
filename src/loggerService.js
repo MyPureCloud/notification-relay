@@ -145,10 +145,9 @@ function checkLevel(level) { return level ? level : 'debug'; }
 // Inspired by https://stackoverflow.com/questions/4816099/chrome-sendrequest-error-typeerror-converting-circular-structure-to-json/4816258
 function simpleStringify (object) {
 	var simpleObject = {};
-	for (var prop in object ){
+	for (var prop in object) {
 		if (!object.hasOwnProperty(prop) ||
-			typeof(object[prop]) == 'object' || 
-			typeof(object[prop]) == 'function') {
+			typeof(object[prop]) === 'function') {
 			continue;
 		}
 		simpleObject[prop] = object[prop];

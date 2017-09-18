@@ -51,14 +51,13 @@ SocketManager.prototype.getWebSocket = function(url) {
 	return webSockets[url];
 };
 
-SocketManager.prototype.listenWebSocket = function(port, connectionCallback, errorCallback, listeningCallback, closedCallback) {
+SocketManager.prototype.listenWebSocket = function(port, connectionCallback, errorCallback, listeningCallback) {
 	// https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
 	var wss = new WebSocket.Server({ port: port });
 	
 	wss.on('connection', connectionCallback);
 	wss.on('error', errorCallback);
 	wss.on('listening', listeningCallback);
-	wss.on('close', closedCallback);
 
 	webSocketServers[port] = wss;
 

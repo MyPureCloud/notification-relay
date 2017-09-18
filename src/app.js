@@ -24,7 +24,6 @@ log.info('Autenticating with PureCloud...');
 pureCloud.login()
 	.then(function() {
 		log.info('Populating default cache...');
-		// TODO: Populate cache with entities defined in config (users, queues, etc)
 		return pureCloud.getUsers([ 'presence', 'routingStatus', 'conversationSummary' ]);
 	})
 	.then(function(users) {

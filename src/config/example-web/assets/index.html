@@ -41,6 +41,11 @@
 			text-align: center;
 			margin: auto 10% !important;
 		}
+
+		.container {
+			width: 98% !important;
+			margin: 0 auto;
+		}
 	</style>
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
@@ -58,6 +63,7 @@
   		'meeting': 'presence-meeting',
   		'offline': 'presence-offline'
   	};
+  	var userCount = 0;
 
 	  $(document).ready(function init() {
 	    websocket = new WebSocket(wsUri);
@@ -99,6 +105,7 @@
 	  	}
 
 	  	// Handle message
+	  	console.log('raw message: ', json);
 	  	if (json && json.type === 'user') {
 	  		updateUser(json.body, json.initiator);
 	  	} else if (json) {
@@ -134,6 +141,8 @@
 	  		// Get or create row for user
 	  		var userDom = $('#'+user.user.id);
 	  		if (userDom.length === 0) {
+	  			userCount++;
+	  			$('#user-count').text(userCount);
 					$('#users').append(
 						`<tr id="${user.user.id}">` +
 							`<td class="name"></td>` +
@@ -148,24 +157,28 @@
 	  		}
 
 	  		// Set user data
-	  		userDom.children('.name').html(user.user.name);
+	  		userDom.children('.name').text(user.user.name);
 	  		userDom.children('.presence').html(formatPresenceMessage(user.presence.label, user.presence.systemPresence));
-	  		userDom.children('.routingStatus').html(user.routingStatus.status);
-	  		userDom.children('.calls').html(formatMediaCounts(user.conversationSummary.call));
-	  		userDom.children('.callbacks').html(formatMediaCounts(user.conversationSummary.callback));
-	  		userDom.children('.emails').html(formatMediaCounts(user.conversationSummary.email));
-	  		userDom.children('.chats').html(formatMediaCounts(user.conversationSummary.chat));
+	  		userDom.children('.routingStatus').text(user.routingStatus.status);
+	  		userDom.children('.calls').text(formatMediaCounts(user.conversationSummary.call));
+	  		userDom.children('.callbacks').text(formatMediaCounts(user.conversationSummary.callback));
+	  		userDom.children('.emails').text(formatMediaCounts(user.conversationSummary.email));
+	  		userDom.children('.chats').text(formatMediaCounts(user.conversationSummary.chat));
 
 	  		// Update user last update timesteamp
-	  		$('#lastUpdated').html(new Date());
+	  		$('#lastUpdated').text(new Date());
 	  	} catch(err) {
 	  		console.error(err);
 	  	}
 	  }
 
 	  function formatPresenceMessage(label, systemPresence) {
-	  	if (!systemPresence) return label;
-	  	return `<span class="${presenceClassMap[systemPresence.toLowerCase()]}">${label}</span>`;
+	  	var span = $('<span>');
+	  	if (systemPresence)
+	  		span.addClass(presenceClassMap[systemPresence.toLowerCase()]);
+	  	span.text(label);
+	  	return span;
+	  	//return `<span class="${presenceClassMap[systemPresence.toLowerCase()]}">${label}</span>`;
 	  }
 
 	  function formatMediaCounts(media) {
@@ -189,6 +202,7 @@
 <div class="container">
 	<div class="row">
 		<div class="col-md-12">
+			<p>Displaying <span id="user-count"></span> users</p>
 			<table class="table table-hover">
 				<thead>
 					<tr>

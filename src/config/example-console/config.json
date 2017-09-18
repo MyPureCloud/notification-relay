@@ -3,12 +3,11 @@
 	"logTopic": "example-console",
 	"modulePath": "./config/example-console/integration.js",
 	"subscriptions": {
-		"v2.users.{id}.presence": { "$ref": "#/users"},
 		"v2.users.{id}.routingStatus": { "$ref": "#/users"},
-		"v2.users.{id}.activity": { "$ref": "#/users"}
+		"v2.users.{id}.presence": { "$ref": "#/users"},
+		"v2.users.{id}.conversationsummary": { "$ref": "#/users"}
 	},
 	"users": [
-		"9ed7d9f6-0c59-4360-ac54-40dd35eb9c2f",
-		"8c35c7da-440c-47b9-b9e3-658e5574a086"
+		"ad716ab8-c75e-417b-898e-af66273872d8"
 	]
 }

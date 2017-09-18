@@ -182,15 +182,6 @@ function onNotification(topic, data) {
 			return;
 		}
 
-
-		// TODO: Activity
-		var activityMatch = topic.match(/v2\.users\.([0-9a-f\-]{36})\.activity/i);
-		if (activityMatch) {
-			_this.log.info(`User activity for ${activityMatch[1]}`, data.eventBody);
-
-			return;
-		}
-
 		// Only called when topic isn't matched
 		_this.log.warn(`Unmatched notification topic: ${topic}`);
 	} catch(err) {

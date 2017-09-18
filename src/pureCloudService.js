@@ -195,6 +195,7 @@ function getUsersImpl(users = {}, expand = [], deferred = Q.defer(), pageNumber 
 	  	}
 
 	  	// Recurse function
+	  	log.debug(`Getting users page ${pageNumber + 1}, current user count: ${_.keys(users).length}`);
 	  	getUsersImpl(users, expand, deferred, pageNumber + 1);
 	  })
 		.catch(function(response) {
@@ -228,6 +229,7 @@ function getQueuesImpl(queues = {}, deferred = Q.defer(), pageNumber = 1) {
 	  	}
 
 	  	// Recurse function
+	  	log.debug(`Getting queues page ${pageNumber + 1}, current queue count: ${_.keys(queues).length}`);
 	  	getQueuesImpl(queues, deferred, pageNumber + 1);
 	  })
 		.catch(function(response) {
@@ -261,6 +263,7 @@ function getPresencesImpl(presences = {}, deferred = Q.defer(), pageNumber = 1) 
 	  	}
 
 	  	// Recurse function
+	  	log.debug(`Getting presences page ${pageNumber + 1}, current presence count: ${_.keys(presences).length}`);
 	  	getPresencesImpl(presences, deferred, pageNumber + 1);
 	  })
 		.catch(function(response) {
