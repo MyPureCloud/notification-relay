@@ -19,7 +19,7 @@ Let's run the standard examples:
 
 1. Clone this repo
 2. Update the config for the examples:
-  * [example-console/config.json](*https://github.com/MyPureCloud/notification-relay/blob/master/src/config/example-console/config.json), [example overview](https://github.com/MyPureCloud/notification-relay/wiki/Example-%7C-console)
+  * [example-console/config.json](https://github.com/MyPureCloud/notification-relay/blob/master/src/config/example-console/config.json), [example overview](https://github.com/MyPureCloud/notification-relay/wiki/Example-%7C-console)
   * [example-web/config-websockets.json](https://github.com/MyPureCloud/notification-relay/blob/master/src/config/example-web/config-websockets.json), [example overview](https://github.com/MyPureCloud/notification-relay/wiki/Example-%7C-web)
 3. Run the application via the command line with appropriate configuration values
 
