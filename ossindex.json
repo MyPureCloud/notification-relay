@@ -1,0 +1,21 @@
+{
+  "author": "Genesys Developer Evangelists",
+  "title": "Notification Relay",
+  "logo_url": "https://raw.githubusercontent.com/MyPureCloud/platform-client-sdk-dotnet/master/genesys_64.png",
+  "categories": [
+    "utilities",
+    "analytics"
+  ],
+  "tags": [
+    "analytics",
+    "reporting",
+    "wfm",
+    "node.js"
+  ],
+  "apis": [
+    "platform"
+  ],
+  "sdks": [
+    "javascript"
+  ]
+}
